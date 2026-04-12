@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finance">
+<title>Finance Tracker</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --surface2: #f2f2f7;
+    --grouped: #ffffff;
+    --border: rgba(60,60,67,0.12);
+    --text: #000000;
+    --text2: #3c3c43;
+    --text3: #8e8e93;
+    --green: #30a64a;
+    --green-bg: #e8f7ec;
+    --red: #d93025;
+    --red-bg: #fdecea;
+    --blue: #007aff;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --tab-h: 82px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 44px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --surface: #1c1c1e;
+      --surface2: #2c2c2e;
+      --grouped: #1c1c1e;
+      --border: rgba(255,255,255,0.1);
+      --text: #ffffff;
+      --text2: #ebebf5cc;
+      --text3: #8e8e93;
+      --green: #30d158;
+      --green-bg: #0d2e18;
+      --red: #ff453a;
+      --red-bg: #2e0d0d;
+      --blue: #0a84ff;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: -apple-system, 'SF Pro Display', sans-serif; background: var(--bg); color: var(--text); font-size: 17px; }
+
+  /* Layout */
+  #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  #screen { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--tab-h) + var(--safe-bottom)); padding-top: var(--safe-top); }
+  
+  /* Tab bar */
+  #tabbar { position: fixed; bottom: 0; left: 0; right: 0; height: calc(var(--tab-h) + var(--safe-bottom)); background: var(--surface); border-top: 0.5px solid var(--border); display: flex; align-items: flex-start; padding-top: 8px; padding-bottom: var(--safe-bottom); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 4px 0; border: none; background: none; font-family: inherit; }
+  .tab-icon { font-size: 22px; line-height: 1; }
+  .tab-label { font-size: 10px; color: var(--text3); font-weight: 500; }
+  .tab-item.active .tab-label { color: var(--blue); }
+  .tab-item.active .tab-icon { filter: none; }
+
+  /* Pages */
+  .page { display: none; padding: 0 0 16px; }
+  .page.active { display: block; }
+
+  /* Large title nav */
+  .nav-title { padding: 8px 16px 0; }
+  .large-title { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+  .subtitle { font-size: 13px; color: var(--text3); margin-top: 2px; }
+
+  /* Month scroller */
+  .month-scroll { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .month-scroll::-webkit-scrollbar { display: none; }
+  .month-chip { flex-shrink: 0; padding: 7px 16px; border-radius: 20px; font-size: 14px; font-weight: 500; border: 1.5px solid var(--border); background: var(--surface); color: var(--text3); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+  .month-chip.active { background: var(--blue); color: white; border-color: var(--blue); }
+  .month-chip .mdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+  .month-chip.active .mdot { background: white; opacity: 1; }
+  .month-chip.no-data { opacity: 0.5; }
+
+  /* Reminder banner */
+  .reminder { margin: 0 16px 12px; background: #fff8e1; border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+  @media (prefers-color-scheme: dark) { .reminder { background: #2a2000; } }
+  .reminder-text { flex: 1; font-size: 13px; color: #7a5200; font-weight: 500; line-height: 1.4; }
+  @media (prefers-color-scheme: dark) { .reminder-text { color: #f0c040; } }
+  .reminder-btn { font-size: 12px; color: var(--blue); font-weight: 600; white-space: nowrap; border: none; background: none; font-family: inherit; cursor: pointer; padding: 4px 0; }
+
+  /* Cards */
+  .section { margin: 0 16px 16px; }
+  .section-header { font-size: 13px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; padding-left: 4px; }
+  .card { background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; }
+
+  /* Metrics */
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 16px; }
+  .metric-big { grid-column: 1 / -1; }
+  .metric-card { background: var(--surface); border-radius: var(--radius-lg); padding: 16px; }
+  .metric-label { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .metric-val { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+  .metric-val.green { color: var(--green); }
+  .metric-val.red { color: var(--red); }
+  .metric-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* Bar chart */
+  .bar-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 0.5px solid var(--border); }
+  .bar-row:last-child { border-bottom: none; }
+  .bar-name { font-size: 13px; color: var(--text); width: 100px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 16px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-amt { font-size: 13px; font-weight: 600; color: var(--text); min-width: 68px; text-align: right; }
+
+  /* Shop summary */
+  .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 16px 16px; }
+  .shop-tile { border-radius: var(--radius-lg); padding: 16px; }
+  .shop-tile.ess { background: var(--green-bg); }
+  .shop-tile.non { background: var(--red-bg); }
+  .shop-tile-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .shop-tile.ess .shop-tile-label { color: var(--green); }
+  .shop-tile.non .shop-tile-label { color: var(--red); }
+  .shop-tile-val { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .shop-tile.ess .shop-tile-val { color: var(--green); }
+  .shop-tile.non .shop-tile-val { color: var(--red); }
+  .shop-tile-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  /* Transaction list */
+  .txn-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+  .txn-row:last-child { border-bottom: none; }
+  .txn-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .txn-info { flex: 1; min-width: 0; }
+  .txn-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-cat { font-size: 12px; color: var(--text3); margin-top: 1px; display: flex; align-items: center; gap: 6px; }
+  .txn-right { text-align: right; flex-shrink: 0; }
+  .txn-amt { font-size: 15px; font-weight: 600; }
+  .txn-amt.red { color: var(--red); }
+  .txn-amt.green { color: var(--green); }
+  .txn-date { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .pill { display: inline-flex; border-radius: 20px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; font-size: 10px; font-weight: 600; }
+  .pill span { padding: 2px 7px; background: transparent; color: var(--text3); }
+  .pill span.ess-on { background: var(--green); color: #fff; }
+  .pill span.non-on { background: var(--red); color: #fff; }
+
+  /* Filter chips */
+  .filter-scroll { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .filter-scroll::-webkit-scrollbar { display: none; }
+  .fchip { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1.5px solid var(--border); background: var(--surface); color: var(--text3); cursor: pointer; }
+  .fchip.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+  /* Insights */
+  .insight-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 0.5px solid var(--border); gap: 12px; }
+  .insight-row:last-child { border-bottom: none; }
+  .insight-label { font-size: 15px; font-weight: 500; }
+  .insight-note { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .insight-val { font-size: 15px; font-weight: 700; color: var(--red); white-space: nowrap; }
+  .tip { margin: 0 16px; background: var(--green-bg); border-radius: var(--radius-lg); padding: 14px 16px; font-size: 13px; color: var(--green); line-height: 1.7; }
+
+  /* Upload */
+  .upload-zone { margin: 16px; border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 40px 24px; text-align: center; cursor: pointer; background: var(--surface); }
+  .upload-zone-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-zone-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .upload-zone-sub { font-size: 13px; color: var(--text3); line-height: 1.5; }
+
+  /* Form */
+  .form-group { padding: 0 16px; }
+  .form-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 0.5px solid var(--border); background: var(--surface); }
+  .form-row:first-child { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .form-row:last-child { border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-bottom: none; }
+  .form-row:only-child { border-radius: var(--radius-lg); border-bottom: none; }
+  .form-label { font-size: 15px; color: var(--text2); width: 90px; flex-shrink: 0; }
+  .form-input { flex: 1; font-size: 15px; border: none; outline: none; background: transparent; color: var(--text); font-family: inherit; text-align: right; }
+  .form-input::placeholder { color: var(--text3); }
+  .submit-btn { margin: 16px; width: calc(100% - 32px); padding: 16px; border-radius: var(--radius-lg); background: var(--blue); color: white; font-size: 17px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
+
+  /* Empty */
+  .empty-view { text-align: center; padding: 60px 24px; }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .empty-sub { font-size: 15px; color: var(--text3); line-height: 1.5; margin-bottom: 24px; }
+  .empty-btn { display: inline-block; padding: 12px 28px; border-radius: var(--radius-lg); background: var(--blue); color: white; font-size: 15px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
+
+  /* Alert */
+  .alert-banner { margin: 0 16px 12px; background: var(--red-bg); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--red); font-weight: 500; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="screen">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="nav-title">
+        <div class="large-title" id="home-title">Overview</div>
+        <div class="subtitle" id="home-sub"></div>
+      </div>
+
+      <div class="month-scroll" id="month-scroll"></div>
+
+      <div id="reminder-wrap"></div>
+      <div id="alert-wrap"></div>
+
+      <div id="home-empty" style="display:none;">
+        <div class="empty-view">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title" id="home-empty-title">No data yet</div>
+          <div class="empty-sub">Upload your bank statement to get started.</div>
+          <button class="empty-btn" onclick="goTab('upload')">Upload statement</button>
+        </div>
+      </div>
+
+      <div id="home-content">
+        <div class="metrics-grid">
+          <div class="metric-card metric-big">
+            <div class="metric-label">Net this month</div>
+            <div class="metric-val" id="m-net">—</div>
+            <div class="metric-sub" id="m-net-sub"></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Income</div>
+            <div class="metric-val green" id="m-income">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Spending</div>
+            <div class="metric-val red" id="m-spend">—</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">By category</div>
+          <div class="card" id="chart-area"></div>
+        </div>
+
+        <div class="section-header" style="padding: 0 20px 8px; font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;">Shopping breakdown</div>
+        <div class="shop-grid">
+          <div class="shop-tile ess">
+            <div class="shop-tile-label">Essential</div>
+            <div class="shop-tile-val" id="ess-val">$0</div>
+            <div class="shop-tile-sub" id="ess-sub">0 items</div>
+          </div>
+          <div class="shop-tile non">
+            <div class="shop-tile-label">BS Spending</div>
+            <div class="shop-tile-val" id="non-val">$0</div>
+            <div class="shop-tile-sub" id="non-sub">0 items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-txns">
+      <div class="nav-title">
+        <div class="large-title" id="tx-title">Transactions</div>
+        <div class="subtitle" id="tx-sub"></div>
+      </div>
+      <div class="month-scroll" id="month-scroll-tx"></div>
+      <div class="filter-scroll" id="filter-row"></div>
+      <div id="tx-empty" style="display:none;">
+        <div class="empty-view">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">No transactions</div>
+          <div class="empty-sub">No data for this month yet.</div>
+          <button class="empty-btn" onclick="goTab('upload')">Upload statement</button>
+        </div>
+      </div>
+      <div class="section" style="margin-top:0;">
+        <div class="card" id="txn-list"></div>
+      </div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div class="page" id="page-insights">
+      <div class="nav-title">
+        <div class="large-title" id="ins-title">Insights</div>
+        <div class="subtitle" id="ins-sub"></div>
+      </div>
+      <div class="month-scroll" id="month-scroll-ins"></div>
+      <div id="ins-empty" style="display:none;">
+        <div class="empty-view"><div class="empty-icon">💡</div><div class="empty-title">No data</div><div class="empty-sub">Upload a statement to see insights.</div><button class="empty-btn" onclick="goTab('upload')">Upload statement</button></div>
+      </div>
+      <div class="section" id="ins-content">
+        <div class="card" id="insights-list"></div>
+      </div>
+      <div class="tip" id="tip-box" style="margin-bottom:16px;"></div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="page" id="page-upload">
+      <div class="nav-title" style="margin-bottom:8px;">
+        <div class="large-title">Add Statement</div>
+        <div class="subtitle">CSV stays on your device</div>
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('csv-inp').click()">
+        <input type="file" id="csv-inp" accept=".csv,.txt" style="display:none" onchange="handleFile(this)">
+        <div class="upload-zone-icon">📂</div>
+        <div class="upload-zone-title">Upload bank statement</div>
+        <div class="upload-zone-sub">Tap to choose a CSV file downloaded from your bank. Nothing is sent anywhere — stays on your phone.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--text3);padding:0 4px;line-height:1.8;">
+          <strong style="color:var(--text);font-size:15px;">Getting your CSV from Bank of America:</strong><br>
+          1. Open bankofamerica.com in Safari<br>
+          2. Go to your checking account<br>
+          3. Tap Download transactions<br>
+          4. Choose date range → CSV → Download<br>
+          5. Come back here and upload it
+        </div>
+      </div>
+    </div>
+
+    <!-- MANUAL ADD -->
+    <div class="page" id="page-add">
+      <div class="nav-title" style="margin-bottom:16px;">
+        <div class="large-title">Add Transaction</div>
+        <div class="subtitle">Cash or missing entries</div>
+      </div>
+      <div class="form-group">
+        <div class="form-row"><div class="form-label">Date</div><input class="form-input" type="date" id="m-date"></div>
+        <div class="form-row"><div class="form-label">Description</div><input class="form-input" type="text" id="m-desc" placeholder="e.g. Cash groceries"></div>
+        <div class="form-row"><div class="form-label">Amount</div><input class="form-input" type="number" id="m-amount" placeholder="-45.00" step="0.01"></div>
+      </div>
+      <div style="padding: 8px 20px; font-size: 13px; color: var(--text3);">Use negative for expenses (−45.00), positive for income.</div>
+      <button class="submit-btn" onclick="addManual()">Add Transaction</button>
+    </div>
+
+  </div>
+
+  <!-- TAB BAR -->
+  <div id="tabbar">
+    <button class="tab-item active" id="tab-home" onclick="goTab('home')">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Overview</span>
+    </button>
+    <button class="tab-item" id="tab-txns" onclick="goTab('txns')">
+      <span class="tab-icon">📋</span>
+      <span class="tab-label">Transactions</span>
+    </button>
+    <button class="tab-item" id="tab-insights" onclick="goTab('insights')">
+      <span class="tab-icon">💡</span>
+      <span class="tab-label">Insights</span>
+    </button>
+    <button class="tab-item" id="tab-upload" onclick="goTab('upload')">
+      <span class="tab-icon">📂</span>
+      <span class="tab-label">Upload</span>
+    </button>
+    <button class="tab-item" id="tab-add" onclick="goTab('add')">
+      <span class="tab-icon">➕</span>
+      <span class="tab-label">Add</span>
+    </button>
+  </div>
+</div>
+
+<script>
+const MN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CATS = [
+  {name:'Rent',color:'#c0392b',icon:'🏠'},{name:'Groceries',color:'#27ae60',icon:'🛒'},
+  {name:'Auto',color:'#2980b9',icon:'🚗'},{name:'Insurance',color:'#7f77dd',icon:'🛡'},
+  {name:'Bills',color:'#d4537e',icon:'📄'},{name:'Shopping',color:'#e67e22',icon:'🛍'},
+  {name:'Gas',color:'#16a085',icon:'⛽'},{name:'Food & Dining',color:'#d35400',icon:'🍔'},
+  {name:'Subscriptions',color:'#2471a3',icon:'📱'},{name:'Health',color:'#1e8449',icon:'💊'},
+  {name:'Entertainment',color:'#8e44ad',icon:'🎉'},{name:'Transfers',color:'#888780',icon:'🔄'},
+  {name:'Income',color:'#27ae60',icon:'💵'},{name:'Other',color:'#7f8c8d',icon:'📦'},
+];
+const KW = [
+  {name:'Food & Dining',kw:['mcdonald','subway','pizza','burger','cafe','coffee','starbucks','donut','sushi','taco','chipotle','grubhub','doordash','ubereats','wendy','kfc','chick','deli','bakery','panera','dunkin','restaurant']},
+  {name:'Groceries',kw:['grocery','walmart','costco','kroger','safeway','whole foods','trader joe','aldi','publix','market basket','supermarket','food lion','stop & shop','wegmans','bjs','savers']},
+  {name:'Gas',kw:['shell','exxon','bp','chevron','mobil','speedway','cumberland','gulf','sunoco','citgo','valero']},
+  {name:'Auto',kw:['toyota','honda','ford','auto loan','parking','garage','rmv','tire','muffler','jiffy lube','oil change']},
+  {name:'Shopping',kw:['amazon','target','ebay','etsy','bestbuy','best buy','home depot','lowes','ikea','macys','nordstrom','tj maxx','tjmaxx','marshalls','ross','dollar tree','dollar general','five below','loop','modern gents']},
+  {name:'Bills',kw:['electric','water','internet','cable','verizon','at&t','t-mobile','sprint','comcast','xfinity','utility','td bank','chase credit','capital one','citi','best buy payment','credit card']},
+  {name:'Insurance',kw:['progressive','geico','allstate','state farm','liberty mutual','amica','commerce insur','insuran']},
+  {name:'Subscriptions',kw:['netflix','spotify','hulu','disney','apple','google','microsoft','adobe','dropbox','amazon prime','youtube','hbo','paramount','peacock','visible','icloud']},
+  {name:'Health',kw:['pharmacy','cvs','walgreens','rite aid','doctor','hospital','dental','vision','medical','clinic','urgent care']},
+  {name:'Entertainment',kw:['aquarium','museum','cinema','movie','theater','concert','ticketmaster','bowling','arcade']},
+  {name:'Income',kw:['payroll','direct deposit','salary','payment received','tax refund','sbtpg','pmnt rcvd','cashback','refund','deposit']},
+  {name:'Rent',kw:['rent','zelle.*polanco']},
+];
+
+let monthlyData = {
+  '2026-03': [
+    {date:'02/25/26',desc:'Online Banking Transfer from SAV',amount:50.00,category:'Transfers'},
+    {date:'02/27/26',desc:'BofA Mobile Deposit',amount:1632.12,category:'Income'},
+    {date:'02/27/26',desc:'GEICO EFT Refund',amount:202.93,category:'Income'},
+    {date:'03/02/26',desc:'Uber Payment Received',amount:130.28,category:'Income'},
+    {date:'03/04/26',desc:'SBTPG Tax Refund',amount:3343.37,category:'Income'},
+    {date:'03/09/26',desc:'ONE BRios Payment Received',amount:160.00,category:'Income'},
+    {date:'03/10/26',desc:'Online Banking Transfer from SAV',amount:100.00,category:'Transfers'},
+    {date:'03/11/26',desc:'MA State Tax Refund',amount:602.00,category:'Income'},
+    {date:'03/16/26',desc:'BofA Financial Center Deposit',amount:1600.00,category:'Income'},
+    {date:'03/16/26',desc:'Uber Payment Received',amount:158.07,category:'Income'},
+    {date:'03/16/26',desc:'Online Banking Transfer from SAV',amount:100.00,category:'Transfers'},
+    {date:'03/16/26',desc:'ONE BRios Payment Received',amount:25.00,category:'Income'},
+    {date:'03/19/26',desc:'Digital Federal A2A Transfer',amount:770.00,category:'Transfers'},
+    {date:'03/23/26',desc:'BofA Mobile Deposit',amount:382.56,category:'Income'},
+    {date:'03/24/26',desc:'Online Banking Transfer from SAV',amount:719.52,category:'Transfers'},
+    {date:'02/25/26',desc:'Excel Tire Gauge Methuen',amount:-2.00,category:'Auto'},
+    {date:'02/25/26',desc:'Cumberland Farms North Billerica',amount:-34.64,category:'Gas'},
+    {date:'02/25/26',desc:'ALDI Salem NH',amount:-37.90,category:'Groceries'},
+    {date:'02/26/26',desc:'Toyota ACH Payment',amount:-515.43,category:'Auto'},
+    {date:'02/27/26',desc:'Progressive Insurance',amount:-147.60,category:'Insurance'},
+    {date:'02/27/26',desc:'Target Methuen',amount:-36.99,category:'Shopping',essential:true},
+    {date:'03/02/26',desc:'Walmart Recurring',amount:-39.97,category:'Groceries'},
+    {date:'03/02/26',desc:'Quick Stop II Methuen',amount:-3.50,category:'Gas'},
+    {date:'03/02/26',desc:'Lowell St Methuen',amount:-23.12,category:'Other'},
+    {date:'03/02/26',desc:'McDonalds Newton',amount:-5.23,category:'Food & Dining'},
+    {date:'03/02/26',desc:'Stop & Shop Bedford',amount:-9.99,category:'Groceries'},
+    {date:'03/02/26',desc:'CVS Pharmacy Methuen',amount:-7.49,category:'Health'},
+    {date:'03/02/26',desc:'Visible Phone Bill',amount:-19.00,category:'Bills'},
+    {date:'03/02/26',desc:'Zelle Rent - Rafael Polanco',amount:-1500.00,category:'Rent'},
+    {date:'03/02/26',desc:'Savers Nashua NH',amount:-20.92,category:'Shopping',essential:true},
+    {date:'03/02/26',desc:'ALDI Plaistow NH',amount:-32.07,category:'Groceries'},
+    {date:'03/02/26',desc:'TJ Maxx Plaistow NH',amount:-20.97,category:'Shopping',essential:true},
+    {date:'03/02/26',desc:'Panera Bread Plaistow NH',amount:-9.75,category:'Food & Dining'},
+    {date:'03/02/26',desc:'BJs Wholesale Haverhill',amount:-48.72,category:'Groceries'},
+    {date:'03/03/26',desc:'McDonalds Haverhill',amount:-8.53,category:'Food & Dining'},
+    {date:'03/03/26',desc:'TD Bank Payment',amount:-35.00,category:'Bills'},
+    {date:'03/04/26',desc:'Online Banking Transfer to SAV',amount:-3343.00,category:'Transfers'},
+    {date:'03/04/26',desc:'Cumberland Farms North Billerica',amount:-10.00,category:'Gas'},
+    {date:'03/04/26',desc:'Target Methuen',amount:-8.49,category:'Shopping',essential:true},
+    {date:'03/04/26',desc:'Market Basket Methuen',amount:-31.26,category:'Groceries'},
+    {date:'03/05/26',desc:'Amazon Purchase',amount:-8.99,category:'Shopping',essential:true},
+    {date:'03/05/26',desc:'Speedway Lawrence MA',amount:-5.01,category:'Gas'},
+    {date:'03/06/26',desc:'McDonalds Billerica',amount:-6.18,category:'Food & Dining'},
+    {date:'03/06/26',desc:'Walmart Methuen',amount:-42.49,category:'Groceries'},
+    {date:'03/09/26',desc:'Amazon Purchase',amount:-61.61,category:'Shopping',essential:true},
+    {date:'03/09/26',desc:'Target Salem NH',amount:-37.76,category:'Shopping',essential:true},
+    {date:'03/09/26',desc:'Chase Credit Card Payment',amount:-94.83,category:'Bills'},
+    {date:'03/09/26',desc:'Capital One Payment',amount:-30.00,category:'Bills'},
+    {date:'03/11/26',desc:'Target Methuen',amount:-30.58,category:'Shopping',essential:true},
+    {date:'03/11/26',desc:'Market Basket Methuen',amount:-11.34,category:'Groceries'},
+    {date:'03/11/26',desc:'Commerce Insurance',amount:-239.84,category:'Insurance'},
+    {date:'03/11/26',desc:'Verizon Payment',amount:-49.99,category:'Bills'},
+    {date:'03/12/26',desc:'Walmart Methuen',amount:-51.13,category:'Groceries'},
+    {date:'03/13/26',desc:'Modern Gents',amount:-63.70,category:'Shopping',essential:true},
+    {date:'03/13/26',desc:'Cumberland Farms North Billerica',amount:-50.13,category:'Gas'},
+    {date:'03/13/26',desc:'Market Basket Methuen',amount:-51.87,category:'Groceries'},
+    {date:'03/13/26',desc:'Walmart Methuen',amount:-42.61,category:'Groceries'},
+    {date:'03/13/26',desc:'Target Nashua NH',amount:-4.99,category:'Shopping',essential:true},
+    {date:'03/13/26',desc:'Best Buy Auto Payment',amount:-50.00,category:'Bills'},
+    {date:'03/16/26',desc:'The Loop Methuen',amount:-30.19,category:'Shopping',essential:true},
+    {date:'03/16/26',desc:'Progressive Insurance',amount:-141.30,category:'Insurance'},
+    {date:'03/16/26',desc:'Online Banking Transfer to SAV',amount:-956.99,category:'Transfers'},
+    {date:'03/16/26',desc:'New England Aquarium',amount:-10.00,category:'Entertainment'},
+    {date:'03/16/26',desc:'Harbor Garage Boston',amount:-40.00,category:'Auto'},
+    {date:'03/16/26',desc:'ALDI Salem NH',amount:-74.91,category:'Groceries'},
+    {date:'03/16/26',desc:'Online Banking Transfer to SAV',amount:-80.00,category:'Transfers'},
+    {date:'03/16/26',desc:'Online Banking Transfer to SAV',amount:-28.00,category:'Transfers'},
+    {date:'03/16/26',desc:'Cumberland Farms North Billerica',amount:-39.89,category:'Gas'},
+    {date:'03/18/26',desc:'RMV Wilmington MA',amount:-157.50,category:'Auto'},
+    {date:'03/19/26',desc:'Online Banking Transfer to SAV',amount:-770.00,category:'Transfers'},
+    {date:'03/19/26',desc:'Capital One Payment',amount:-75.00,category:'Bills'},
+    {date:'03/20/26',desc:'Quick Stop II Methuen',amount:-3.50,category:'Gas'},
+    {date:'03/20/26',desc:'Target Methuen',amount:-3.19,category:'Shopping',essential:true},
+    {date:'03/23/26',desc:'Chick-fil-A Methuen',amount:-43.97,category:'Food & Dining'},
+    {date:'03/23/26',desc:'Speedway Woburn',amount:-30.33,category:'Gas'},
+    {date:'03/23/26',desc:'Dollar Tree Methuen',amount:-56.13,category:'Shopping',essential:true},
+    {date:'03/23/26',desc:'Marshalls Methuen',amount:-9.99,category:'Shopping',essential:true},
+    {date:'03/23/26',desc:'ALDI Salem NH',amount:-63.68,category:'Groceries'},
+    {date:'03/23/26',desc:'Market Basket Salem NH',amount:-15.75,category:'Groceries'},
+    {date:'03/23/26',desc:'Apple iCloud',amount:-0.99,category:'Subscriptions'},
+    {date:'03/23/26',desc:'Netflix',amount:-24.99,category:'Subscriptions'},
+    {date:'03/24/26',desc:'Target Methuen',amount:-82.46,category:'Shopping',essential:true},
+    {date:'03/25/26',desc:'Chase Credit Card Payment',amount:-77.67,category:'Bills'},
+    {date:'03/26/26',desc:'Walmart Supercenter NH',amount:-47.19,category:'Groceries'},
+    {date:'03/26/26',desc:'Best Buy Citi Payment',amount:-719.52,category:'Bills'},
+  ]
+};
+
+let currentKey = '2026-03';
+let activeTab = 'home';
+let activeFilter = 'All';
+
+function fmt(n) {
+  return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function catInfo(name) { return CATS.find(c=>c.name===name)||CATS[CATS.length-1]; }
+function categorize(desc) {
+  const d=desc.toLowerCase();
+  for(const c of KW){if(c.kw.some(k=>new RegExp(k).test(d)))return c.name;}
+  return 'Other';
+}
+function monthLabel(k){ const[y,m]=k.split('-'); return MN[parseInt(m)-1]+' '+y; }
+
+function getAllKeys() {
+  const now=new Date();
+  const curKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const all=new Set([...Object.keys(monthlyData),curKey]);
+  const sorted=[...all].sort();
+  const keys=[];
+  let[y,m]=sorted[0].split('-').map(Number);
+  const[cy,cm]=curKey.split('-').map(Number);
+  while(y<cy||(y===cy&&m<=cm)){
+    keys.push(`${y}-${String(m).padStart(2,'0')}`);
+    m++;if(m>12){m=1;y++;}
+  }
+  return keys;
+}
+
+function buildMonthScroll(containerId) {
+  const keys=getAllKeys().slice().reverse();
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.innerHTML=keys.map(k=>`
+    <div class="month-chip${k===currentKey?' active':''}${!monthlyData[k]?' no-data':''}" onclick="selectMonth('${k}')">
+      ${monthLabel(k)}<span class="mdot"></span>
+    </div>`).join('');
+}
+
+function selectMonth(key) {
+  currentKey=key;
+  activeFilter='All';
+  buildAllScrolls();
+  renderTab(activeTab);
+}
+
+function buildAllScrolls() {
+  buildMonthScroll('month-scroll');
+  buildMonthScroll('month-scroll-tx');
+  buildMonthScroll('month-scroll-ins');
+}
+
+function goTab(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('screen').scrollTo(0,0);
+  activeTab=name;
+  renderTab(name);
+}
+
+function renderTab(name) {
+  const txns=monthlyData[currentKey]||[];
+  const label=monthLabel(currentKey);
+  const has=txns.length>0;
+  if(name==='home') renderHome(txns,label,has);
+  else if(name==='txns') renderTxns(txns,has,label);
+  else if(name==='insights') renderInsights(txns,has,label);
+}
+
+function renderHome(txns,label,has) {
+  document.getElementById('home-title').textContent=label;
+  document.getElementById('home-sub').textContent=has?txns.length+' transactions':'';
+  document.getElementById('home-empty').style.display=has?'none':'block';
+  document.getElementById('home-empty-title').textContent='No data for '+label;
+  document.getElementById('home-content').style.display=has?'block':'none';
+  checkReminder();
+  if(!has)return;
+
+  const income=txns.filter(t=>t.category==='Income').reduce((s,t)=>s+t.amount,0);
+  const spend=txns.filter(t=>t.amount<0&&t.category!=='Transfers').reduce((s,t)=>s+t.amount,0);
+  const net=income+spend;
+
+  document.getElementById('m-income').textContent=fmt(income);
+  document.getElementById('m-spend').textContent=fmt(spend);
+  const ne=document.getElementById('m-net');
+  ne.textContent=fmt(net);
+  ne.className='metric-val '+(net>=0?'green':'red');
+  document.getElementById('m-net-sub').textContent=net<0?'Spent more than earned':'Positive month';
+
+  document.getElementById('alert-wrap').innerHTML=net<0
+    ?`<div class="alert-banner">Spending exceeded income by ${fmt(Math.abs(net))} in ${label}.</div>`:'';
+
+  const expenses=txns.filter(t=>t.amount<0&&t.category!=='Transfers');
+  const totals={};
+  expenses.forEach(t=>{totals[t.category]=(totals[t.category]||0)+Math.abs(t.amount);});
+  const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0]?.[1]||1;
+
+  document.getElementById('chart-area').innerHTML=sorted.map(([n,a])=>{
+    const ci=catInfo(n);
+    return `<div class="bar-row">
+      <div class="bar-name">${n}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(a/max*100)}%;background:${ci.color};"></div></div>
+      <div class="bar-amt">${fmt(-a)}</div>
+    </div>`;
+  }).join('');
+
+  updateShop(txns);
+}
+
+function updateShop(txns) {
+  const shop=txns.filter(t=>t.category==='Shopping');
+  const ess=shop.filter(t=>t.essential!==false);
+  const non=shop.filter(t=>t.essential===false);
+  document.getElementById('ess-val').textContent=fmt(-ess.reduce((s,t)=>s+Math.abs(t.amount),0));
+  document.getElementById('ess-sub').textContent=ess.length+' item'+(ess.length!==1?'s':'');
+  document.getElementById('non-val').textContent=fmt(-non.reduce((s,t)=>s+Math.abs(t.amount),0));
+  document.getElementById('non-sub').textContent=non.length+' item'+(non.length!==1?'s':'');
+}
+
+function renderTxns(txns,has,label) {
+  document.getElementById('tx-title').textContent=label;
+  document.getElementById('tx-sub').textContent=has?txns.length+' transactions':'';
+  document.getElementById('tx-empty').style.display=has?'none':'block';
+  document.getElementById('txn-list').style.display=has?'block':'none';
+  document.getElementById('filter-row').style.display=has?'flex':'none';
+  if(!has)return;
+
+  const cats=['All',...new Set(txns.map(t=>t.category))];
+  document.getElementById('filter-row').innerHTML=cats.map(c=>
+    `<div class="fchip${c===activeFilter?' active':''}" onclick="setFilter('${c}')">${c}</div>`
+  ).join('');
+
+  const filtered=activeFilter==='All'?txns:txns.filter(t=>t.category===activeFilter);
+  document.getElementById('txn-list').innerHTML=filtered.map((t,i)=>{
+    const gi=txns.indexOf(t);
+    const ci=catInfo(t.category);
+    const isShop=t.category==='Shopping';
+    const isEss=t.essential!==false;
+    const pill=isShop?`<div class="pill" onclick="toggleEss(${gi})">
+      <span class="${isEss?'ess-on':''}">Essential</span><span class="${!isEss?'non-on':''}">BS</span>
+    </div>`:'';
+    return `<div class="txn-row">
+      <div class="txn-icon" style="background:${ci.color}22;">${ci.icon}</div>
+      <div class="txn-info">
+        <div class="txn-name">${t.desc}</div>
+        <div class="txn-cat">${t.category}${pill}</div>
+      </div>
+      <div class="txn-right">
+        <div class="txn-amt ${t.amount>0?'green':'red'}">${fmt(t.amount)}</div>
+        <div class="txn-date">${t.date}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f) {
+  activeFilter=f;
+  const txns=monthlyData[currentKey]||[];
+  renderTxns(txns,txns.length>0,monthLabel(currentKey));
+}
+
+function toggleEss(idx) {
+  const t=monthlyData[currentKey][idx];
+  if(!t)return;
+  t.essential=t.essential===false?true:false;
+  const txns=monthlyData[currentKey]||[];
+  renderTxns(txns,txns.length>0,monthLabel(currentKey));
+  updateShop(txns);
+}
+
+function renderInsights(txns,has,label) {
+  document.getElementById('ins-title').textContent=label;
+  document.getElementById('ins-empty').style.display=has?'none':'block';
+  document.getElementById('ins-content').style.display=has?'block':'none';
+  document.getElementById('tip-box').style.display=has?'block':'none';
+  if(!has)return;
+
+  const get=cat=>txns.filter(t=>t.category===cat).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const rows=[
+    {l:'Rent',n:'Monthly payment',v:get('Rent')},
+    {l:'Groceries',n:'ALDI, Market Basket, BJs, Walmart',v:get('Groceries')},
+    {l:'Shopping',n:txns.filter(t=>t.category==='Shopping').length+' purchases',v:get('Shopping')},
+    {l:'Credit card payments',n:'Chase, Capital One, Best Buy/Citi',v:get('Bills')},
+    {l:'Car & insurance',n:'Toyota, Progressive, Commerce, RMV',v:get('Auto')+get('Insurance')},
+    {l:'Gas',n:txns.filter(t=>t.category==='Gas').length+' fill-ups',v:get('Gas')},
+    {l:'Food & dining',n:'McDonalds, Chick-fil-A, Panera',v:get('Food & Dining')},
+    {l:'Subscriptions',n:'Netflix, iCloud',v:get('Subscriptions')},
+  ].filter(r=>r.v>0);
+
+  document.getElementById('insights-list').innerHTML=rows.map(r=>
+    `<div class="insight-row">
+      <div><div class="insight-label">${r.l}</div><div class="insight-note">${r.n}</div></div>
+      <div class="insight-val">${fmt(-r.v)}</div>
+    </div>`).join('');
+
+  const food=get('Food & Dining'),shop=get('Shopping');
+  document.getElementById('tip-box').innerHTML=
+    `<strong>Quick wins — ${label}:</strong><br><br>`+
+    (shop>200?`• Tag non-essential shopping as "BS" in Transactions to see what you could save.<br>`:'') +
+    (food>150?`• Fast food is ${fmt(-food)} — meal prepping 2-3 days could cut it in half.<br>`:'') +
+    `• Green chip = has data. Gray = nothing uploaded yet.`;
+}
+
+function detectKey(txns) {
+  const counts={};
+  txns.forEach(t=>{
+    const p=t.date.match(/(\d{2})\/(\d{2})\/(\d{2})/);
+    if(p){const k=`20${p[3]}-${p[1]}`;counts[k]=(counts[k]||0)+1;}
+  });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||currentKey;
+}
+
+function parseCSV(text) {
+  const lines=text.trim().split('\n');
+  const txns=[];
+  let dc=-1,ic=-1,ac=-1;
+  const hdr=lines[0].toLowerCase().replace(/"/g,'').split(',');
+  hdr.forEach((h,i)=>{
+    const t=h.trim();
+    if(t.includes('date')&&dc<0)dc=i;
+    if((t.includes('desc')||t.includes('memo')||t.includes('name')||t.includes('payee'))&&ic<0)ic=i;
+    if((t.includes('amount')||t.includes('debit')||t.includes('credit'))&&ac<0)ac=i;
+  });
+  if(dc<0)dc=0;if(ic<0)ic=1;if(ac<0)ac=2;
+  for(let i=1;i<lines.length;i++){
+    const row=lines[i].replace(/"/g,'').split(',');
+    if(row.length<2)continue;
+    const date=(row[dc]||'').trim(),desc=(row[ic]||'').trim();
+    const amount=parseFloat((row[ac]||'0').trim().replace(/[^0-9.\-]/g,''));
+    if(!desc||isNaN(amount))continue;
+    const cat=categorize(desc);
+    const e={date,desc,amount,category:cat};
+    if(cat==='Shopping')e.essential=true;
+    txns.push(e);
+  }
+  return txns;
+}
+
+function handleFile(input) {
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const txns=parseCSV(e.target.result);
+    if(!txns.length){alert('No transactions found.');return;}
+    const key=detectKey(txns);
+    if(!monthlyData[key])monthlyData[key]=[];
+    monthlyData[key]=[...monthlyData[key],...txns];
+    currentKey=key;activeFilter='All';
+    buildAllScrolls();
+    goTab('home');
+    alert(`Added ${txns.length} transactions to ${monthLabel(key)}.`);
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function addManual() {
+  const date=document.getElementById('m-date').value;
+  const desc=document.getElementById('m-desc').value.trim();
+  const amount=parseFloat(document.getElementById('m-amount').value);
+  if(!date||!desc||isNaN(amount)){alert('Please fill in all fields.');return;}
+  const p=date.match(/(\d{4})-(\d{2})/);
+  const key=p?`${p[1]}-${p[2]}`:currentKey;
+  if(!monthlyData[key])monthlyData[key]=[];
+  const cat=categorize(desc);
+  const e={date,desc,amount,category:cat};
+  if(cat==='Shopping')e.essential=true;
+  monthlyData[key].unshift(e);
+  document.getElementById('m-date').value='';
+  document.getElementById('m-desc').value='';
+  document.getElementById('m-amount').value='';
+  currentKey=key;activeFilter='All';
+  buildAllScrolls();
+  goTab('home');
+}
+
+function checkReminder() {
+  const now=new Date();
+  if(now.getDate()>7){document.getElementById('reminder-wrap').innerHTML='';return;}
+  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const prevKey=`${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+  if(!monthlyData[prevKey]){
+    document.getElementById('reminder-wrap').innerHTML=`
+      <div class="reminder">
+        <div class="reminder-text">📅 Time to upload your ${monthLabel(prevKey)} statement!</div>
+        <button class="reminder-btn" onclick="goTab('upload')">Upload →</button>
+      </div>`;
+  } else { document.getElementById('reminder-wrap').innerHTML=''; }
+}
+
+// Init
+buildAllScrolls();
+renderTab('home');
+</script>
+</body>
+</html>
