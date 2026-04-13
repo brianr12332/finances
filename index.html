@@ -171,7 +171,32 @@
   .submit-btn { margin: 16px; width: calc(100% - 32px); padding: 16px; border-radius: var(--radius-lg); background: var(--blue); color: white; font-size: 17px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
 
   /* Empty */
-  /* Budget styles */
+  /* Debt tracker styles */
+  .debt-hero { margin: 12px 16px; background: var(--surface); border-radius: var(--radius-lg); padding: 20px; }
+  .debt-hero-label { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .debt-hero-val { font-size: 36px; font-weight: 700; letter-spacing: -1px; color: var(--red); }
+  .debt-hero-sub { font-size: 13px; color: var(--text3); margin-top: 4px; }
+  .debt-progress-wrap { margin-top: 14px; }
+  .debt-progress-bg { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .debt-progress-fill { height: 100%; border-radius: 4px; background: var(--green); }
+  .debt-progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
+  .debt-card { background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 16px; }
+  .debt-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 0.5px solid var(--border); }
+  .debt-row:last-child { border-bottom: none; }
+  .debt-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .debt-info { flex: 1; min-width: 0; }
+  .debt-name { font-size: 15px; font-weight: 500; }
+  .debt-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .debt-bar-bg { height: 4px; background: var(--bg); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .debt-bar-fill { height: 100%; border-radius: 2px; }
+  .debt-right { text-align: right; flex-shrink: 0; }
+  .debt-balance { font-size: 16px; font-weight: 700; color: var(--red); }
+  .debt-min { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .debt-edit-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+  .debt-edit-row:last-child { border-bottom: none; }
+  .debt-input-sm { width: 90px; text-align: right; font-size: 14px; font-weight: 600; border: 0.5px solid var(--border); border-radius: 6px; padding: 5px 8px; background: var(--surface2); color: var(--blue); font-family: inherit; }
+  .avalanche-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; background: #fff3cd; color: #7a5800; margin-left: 6px; }
+  @media (prefers-color-scheme: dark) { .avalanche-badge { background: #2a2000; color: #f0c040; } }
   .budget-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 0.5px solid var(--border); }
   .budget-row:last-child { border-bottom: none; }
   .budget-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
@@ -346,43 +371,60 @@
     <div class="page" id="page-budget">
       <div class="nav-title" style="margin-bottom:4px;">
         <div class="large-title">Budget</div>
-        <div class="subtitle">Monthly recurring bills</div>
+        <div class="subtitle" id="bud-subtitle">Monthly plan</div>
       </div>
       <div class="month-scroll" id="month-scroll-budget"></div>
 
+      <!-- Summary row -->
       <div class="budget-summary">
         <div class="metric-card">
-          <div class="metric-label">Budgeted</div>
-          <div class="metric-val" id="bud-total" style="font-size:22px;">—</div>
+          <div class="metric-label">Total budgeted</div>
+          <div class="metric-val" id="bud-total" style="font-size:20px;">—</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Actual spent</div>
-          <div class="metric-val red" id="bud-actual" style="font-size:22px;">—</div>
+          <div class="metric-label">Total spent</div>
+          <div class="metric-val red" id="bud-actual" style="font-size:20px;">—</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Under budget</div>
-          <div class="metric-val green" id="bud-saved" style="font-size:22px;">—</div>
+          <div class="metric-label">Saved</div>
+          <div class="metric-val green" id="bud-saved" style="font-size:20px;">—</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Over budget</div>
-          <div class="metric-val red" id="bud-over" style="font-size:22px;">—</div>
+          <div class="metric-label">Over</div>
+          <div class="metric-val red" id="bud-over" style="font-size:20px;">—</div>
         </div>
       </div>
 
+      <!-- SECTION 1: BILLS (single payments with due dates) -->
+      <div style="padding:0 16px 8px;">
+        <div class="section-header" style="margin-bottom:4px;">📅 Bills <span style="font-weight:400;color:var(--text3);">— single recurring payments</span></div>
+      </div>
       <div class="section" style="margin-top:0;">
-        <div class="section-header">vs. this month's spending</div>
-        <div class="card" id="budget-list"></div>
+        <div class="card" id="bills-list"></div>
       </div>
 
-      <div style="padding: 0 16px; margin-bottom: 8px;">
-        <div class="section-header">Manage bills</div>
-        <div class="card" id="budget-edit-list" style="padding:0;overflow:hidden;"></div>
+      <!-- SECTION 2: SPENDING LIMITS (category totals, no due date) -->
+      <div style="padding:0 16px 8px;">
+        <div class="section-header" style="margin-bottom:4px;">🛒 Spending limits <span style="font-weight:400;color:var(--text3);">— monthly targets across many purchases</span></div>
+      </div>
+      <div class="section" style="margin-top:0;">
+        <div class="card" id="limits-list"></div>
       </div>
 
-      <!-- Add new bill form -->
-      <div style="padding: 0 16px; margin-bottom: 8px;">
-        <div class="section-header">Add a new bill</div>
-        <div style="background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;">
+      <!-- MANAGE: toggle between bills and limits -->
+      <div style="padding:0 16px 8px;">
+        <div class="section-header">Manage</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button id="manage-tab-bills" onclick="showManageTab('bills')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--blue);background:var(--blue);color:white;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">Bills</button>
+          <button id="manage-tab-limits" onclick="showManageTab('limits')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text3);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;">Spending Limits</button>
+        </div>
+      </div>
+
+      <!-- Manage Bills -->
+      <div id="manage-bills-section" style="padding:0 16px;">
+        <div class="card" id="budget-edit-list" style="padding:0;overflow:hidden;margin-bottom:12px;"></div>
+        <div style="background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:8px;">
+          <div style="padding:12px 16px;font-size:13px;font-weight:600;color:var(--text3);border-bottom:0.5px solid var(--border);">ADD A BILL</div>
           <div class="budget-edit-row">
             <span class="budget-edit-icon">🏷</span>
             <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Name</span>
@@ -390,19 +432,20 @@
           </div>
           <div class="budget-edit-row" style="border-top:0.5px solid var(--border);">
             <span class="budget-edit-icon">💰</span>
-            <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Monthly amount</span>
+            <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Amount</span>
             <input id="new-bill-amount" type="number" step="1" style="width:100px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;" placeholder="0">
           </div>
           <div class="budget-edit-row" style="border-top:0.5px solid var(--border);">
             <span class="budget-edit-icon">📅</span>
             <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Due day of month</span>
-            <input id="new-bill-due" type="number" min="1" max="31" style="width:60px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;" placeholder="1">
+            <input id="new-bill-due" type="number" min="1" max="31" style="width:60px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;" placeholder="e.g. 1">
           </div>
           <div class="budget-edit-row" style="border-top:0.5px solid var(--border);">
             <span class="budget-edit-icon">📂</span>
             <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Category</span>
-            <select id="new-bill-cat" style="border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;font-size:15px;font-weight:600;text-align:right;">
+            <select id="new-bill-cat" style="border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;font-size:15px;font-weight:600;">
               <option value="Bills">Bills</option>
+              <option value="Credit Card Debt">Credit Card Debt</option>
               <option value="Rent">Rent</option>
               <option value="Auto">Auto</option>
               <option value="Insurance">Insurance</option>
@@ -412,9 +455,108 @@
             </select>
           </div>
         </div>
+        <button class="submit-btn" onclick="addBudgetItem()" style="margin-bottom:16px;">Add Bill</button>
       </div>
-      <button class="submit-btn" onclick="addBudgetItem()" style="margin-top:4px;">Add Bill</button>
-      <div style="padding: 8px 20px 16px; font-size:13px; color:var(--text3);">Tap an amount to edit it. Tap 🗑 to delete.</div>
+
+      <!-- Manage Spending Limits -->
+      <div id="manage-limits-section" style="padding:0 16px;display:none;">
+        <div class="card" id="limits-edit-list" style="padding:0;overflow:hidden;margin-bottom:12px;"></div>
+        <div style="background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:8px;">
+          <div style="padding:12px 16px;font-size:13px;font-weight:600;color:var(--text3);border-bottom:0.5px solid var(--border);">ADD A SPENDING LIMIT</div>
+          <div class="budget-edit-row">
+            <span class="budget-edit-icon">🏷</span>
+            <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Name</span>
+            <input id="new-limit-name" style="width:160px;text-align:right;font-size:15px;border:none;outline:none;background:transparent;color:var(--text);font-family:inherit;" placeholder="e.g. Groceries">
+          </div>
+          <div class="budget-edit-row" style="border-top:0.5px solid var(--border);">
+            <span class="budget-edit-icon">💰</span>
+            <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Monthly target</span>
+            <input id="new-limit-amount" type="number" step="1" style="width:100px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;" placeholder="0">
+          </div>
+          <div class="budget-edit-row" style="border-top:0.5px solid var(--border);">
+            <span class="budget-edit-icon">📂</span>
+            <span class="budget-edit-label" style="color:var(--text3);font-size:14px;">Category to track</span>
+            <select id="new-limit-cat" style="border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;font-size:15px;font-weight:600;">
+              <option value="Groceries">Groceries</option>
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Gas">Gas</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Health">Health</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <button class="submit-btn" onclick="addSpendingLimit()" style="margin-bottom:16px;">Add Spending Limit</button>
+      </div>
+
+    </div>
+
+    <!-- DEBT TRACKER -->
+    <div class="page" id="page-debt">
+      <div class="nav-title" style="margin-bottom:4px;">
+        <div class="large-title">Debt Payoff</div>
+        <div class="subtitle">Track what you owe</div>
+      </div>
+
+      <!-- Total debt hero -->
+      <div class="debt-hero">
+        <div class="debt-hero-label">Total debt remaining</div>
+        <div class="debt-hero-val" id="debt-total-val">—</div>
+        <div class="debt-hero-sub" id="debt-total-sub"></div>
+        <div class="debt-progress-wrap" id="debt-progress-wrap" style="display:none;">
+          <div class="debt-progress-bg"><div class="debt-progress-fill" id="debt-prog-fill" style="width:0%;"></div></div>
+          <div class="debt-progress-labels">
+            <span id="debt-prog-paid">$0 paid off</span>
+            <span id="debt-prog-pct">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debt cards -->
+      <div style="padding: 0 16px;">
+        <div class="section-header">Your debts <span style="font-weight:400;color:var(--text3);">· highest interest first (avalanche method)</span></div>
+      </div>
+      <div class="section" style="margin-top:0;">
+        <div class="debt-card" id="debt-list"></div>
+      </div>
+
+      <!-- Manage debts -->
+      <div style="padding: 0 16px; margin-bottom: 8px;">
+        <div class="section-header">Manage debts</div>
+        <div class="debt-card" id="debt-edit-list" style="border-radius:var(--radius-lg);"></div>
+      </div>
+
+      <!-- Add new debt -->
+      <div style="padding: 0 16px; margin-bottom: 8px;">
+        <div class="section-header">Add a debt</div>
+        <div style="background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;">
+          <div class="debt-edit-row">
+            <span style="font-size:18px;margin-right:10px;">🏷</span>
+            <span style="flex:1;font-size:14px;color:var(--text3);">Name</span>
+            <input id="new-debt-name" style="width:160px;text-align:right;font-size:15px;border:none;outline:none;background:transparent;color:var(--text);font-family:inherit;" placeholder="e.g. Chase Sapphire">
+          </div>
+          <div class="debt-edit-row" style="border-top:0.5px solid var(--border);">
+            <span style="font-size:18px;margin-right:10px;">💳</span>
+            <span style="flex:1;font-size:14px;color:var(--text3);">Current balance owed</span>
+            <input id="new-debt-balance" type="number" step="1" style="width:110px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--red);font-family:inherit;" placeholder="0">
+          </div>
+          <div class="debt-edit-row" style="border-top:0.5px solid var(--border);">
+            <span style="font-size:18px;margin-right:10px;">📈</span>
+            <span style="flex:1;font-size:14px;color:var(--text3);">Interest rate (APR %)</span>
+            <input id="new-debt-apr" type="number" step="0.1" style="width:80px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;" placeholder="0.0">
+          </div>
+          <div class="debt-edit-row" style="border-top:0.5px solid var(--border);">
+            <span style="font-size:18px;margin-right:10px;">💰</span>
+            <span style="flex:1;font-size:14px;color:var(--text3);">Min. monthly payment</span>
+            <input id="new-debt-min" type="number" step="1" style="width:100px;text-align:right;font-size:15px;font-weight:600;border:none;outline:none;background:transparent;color:var(--blue);font-family:inherit;" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="addDebt()" style="margin-top:4px;">Add Debt</button>
+
+      <!-- Payoff tip -->
+      <div style="margin: 12px 16px 24px; background: var(--green-bg); border-radius: var(--radius-lg); padding: 14px 16px; font-size: 13px; color: var(--green); line-height: 1.7;" id="debt-tip"></div>
     </div>
 
   </div>
@@ -433,13 +575,13 @@
       <span class="tab-icon">🎯</span>
       <span class="tab-label">Budget</span>
     </button>
+    <button class="tab-item" id="tab-debt" onclick="goTab('debt')">
+      <span class="tab-icon">💳</span>
+      <span class="tab-label">Debt</span>
+    </button>
     <button class="tab-item" id="tab-upload" onclick="goTab('upload')">
       <span class="tab-icon">📂</span>
       <span class="tab-label">Upload</span>
-    </button>
-    <button class="tab-item" id="tab-add" onclick="goTab('add')">
-      <span class="tab-icon">➕</span>
-      <span class="tab-label">Add</span>
     </button>
   </div>
 </div>
@@ -626,6 +768,7 @@ function goTab(name) {
   else if(name==='txns') renderTab('txns');
   else if(name==='insights') renderTab('insights');
   else if(name==='budget') renderBudget();
+  else if(name==='debt') renderDebt();
 }
 
 function renderTab(name) {
@@ -859,7 +1002,7 @@ function checkReminder() {
   } else { document.getElementById('reminder-wrap').innerHTML=''; }
 }
 
-// Budget: pre-filled from Brian's actual recurring bills
+// Budget — BILLS (single payments with due dates)
 let budget = [
   {name:'Rent',        icon:'🏠', category:'Rent',         amount:1500, due:1},
   {name:'Progressive', icon:'🛡', category:'Insurance',    amount:150,  due:27},
@@ -874,150 +1017,346 @@ let budget = [
   {name:'Apple iCloud',icon:'☁️', category:'Subscriptions',amount:1,    due:23},
 ];
 
+// Spending LIMITS (monthly targets, no due date — tracked across many transactions)
+let spendingLimits = [
+  {name:'Groceries',    icon:'🛒', category:'Groceries',    amount:300},
+  {name:'Gas',          icon:'⛽', category:'Gas',           amount:150},
+  {name:'Food & Dining',icon:'🍔', category:'Food & Dining', amount:100},
+  {name:'Shopping',     icon:'🛍', category:'Shopping',      amount:200},
+];
+
 const CAT_ICONS = {
   'Bills':'💳','Rent':'🏠','Auto':'🚗','Insurance':'🛡',
-  'Subscriptions':'📱','Health':'💊','Other':'📦','Groceries':'🛒','Gas':'⛽'
+  'Subscriptions':'📱','Health':'💊','Other':'📦','Groceries':'🛒',
+  'Gas':'⛽','Food & Dining':'🍔','Shopping':'🛍','Entertainment':'🎉','Credit Card Debt':'💳'
 };
+
+let managingTab = 'bills';
+
+function showManageTab(tab) {
+  managingTab = tab;
+  document.getElementById('manage-bills-section').style.display = tab==='bills'?'block':'none';
+  document.getElementById('manage-limits-section').style.display = tab==='limits'?'block':'none';
+  const billsBtn  = document.getElementById('manage-tab-bills');
+  const limitsBtn = document.getElementById('manage-tab-limits');
+  if (tab==='bills') {
+    billsBtn.style.background=limitsBtn.style.background='';
+    billsBtn.style.background='var(--blue)'; billsBtn.style.color='white'; billsBtn.style.borderColor='var(--blue)';
+    limitsBtn.style.background='transparent'; limitsBtn.style.color='var(--text3)'; limitsBtn.style.borderColor='var(--border)';
+  } else {
+    limitsBtn.style.background='var(--blue)'; limitsBtn.style.color='white'; limitsBtn.style.borderColor='var(--blue)';
+    billsBtn.style.background='transparent'; billsBtn.style.color='var(--text3)'; billsBtn.style.borderColor='var(--border)';
+  }
+}
 
 function dueSuffix(d) {
   if(!d) return '—';
-  const s = ['th','st','nd','rd'];
-  const v = d%100;
+  const s=['th','st','nd','rd'];
+  const v=d%100;
   return d+(s[(v-20)%10]||s[v]||s[0]);
 }
 
 function daysUntilDue(dueDay) {
-  if (!dueDay) return null;
-  const now = new Date();
-  let due = new Date(now.getFullYear(), now.getMonth(), dueDay);
-  if (due < now) due = new Date(now.getFullYear(), now.getMonth()+1, dueDay);
-  return Math.ceil((due - now)/(1000*60*60*24));
+  if(!dueDay) return null;
+  const now=new Date();
+  let due=new Date(now.getFullYear(),now.getMonth(),dueDay);
+  if(due<now) due=new Date(now.getFullYear(),now.getMonth()+1,dueDay);
+  return Math.ceil((due-now)/(1000*60*60*24));
 }
 
 function addBudgetItem() {
-  const name     = document.getElementById('new-bill-name').value.trim();
-  const amount   = parseFloat(document.getElementById('new-bill-amount').value);
-  const due      = parseInt(document.getElementById('new-bill-due').value)||null;
-  const category = document.getElementById('new-bill-cat').value;
-  if (!name || isNaN(amount) || amount <= 0) { alert('Please enter a name and amount.'); return; }
-  const icon = CAT_ICONS[category] || '📦';
-  budget.push({name, icon, category, amount, due});
+  const name=document.getElementById('new-bill-name').value.trim();
+  const amount=parseFloat(document.getElementById('new-bill-amount').value);
+  const due=parseInt(document.getElementById('new-bill-due').value)||null;
+  const category=document.getElementById('new-bill-cat').value;
+  if(!name||isNaN(amount)||amount<=0){alert('Please enter a name and amount.');return;}
+  budget.push({name,icon:CAT_ICONS[category]||'📦',category,amount,due});
   document.getElementById('new-bill-name').value='';
   document.getElementById('new-bill-amount').value='';
   document.getElementById('new-bill-due').value='';
   renderBudget();
 }
 
+function addSpendingLimit() {
+  const name=document.getElementById('new-limit-name').value.trim();
+  const amount=parseFloat(document.getElementById('new-limit-amount').value);
+  const category=document.getElementById('new-limit-cat').value;
+  if(!name||isNaN(amount)||amount<=0){alert('Please enter a name and amount.');return;}
+  spendingLimits.push({name,icon:CAT_ICONS[category]||'📦',category,amount});
+  document.getElementById('new-limit-name').value='';
+  document.getElementById('new-limit-amount').value='';
+  renderBudget();
+}
+
 function deleteBudgetItem(idx) {
-  if (!confirm(`Remove "${budget[idx].name}" from your budget?`)) return;
-  budget.splice(idx, 1);
-  renderBudget();
+  if(!confirm(`Remove "${budget[idx].name}"?`))return;
+  budget.splice(idx,1); renderBudget();
 }
 
-function updateBudget(idx, val) {
-  const v = parseFloat(val);
-  if (!isNaN(v) && v >= 0) { budget[idx].amount = v; renderBudget(); }
+function deleteLimit(idx) {
+  if(!confirm(`Remove "${spendingLimits[idx].name}"?`))return;
+  spendingLimits.splice(idx,1); renderBudget();
 }
 
-function updateBudgetDue(idx, val) {
-  const v = parseInt(val);
-  budget[idx].due = (!isNaN(v) && v>=1 && v<=31) ? v : null;
-  renderBudget();
+function updateBudget(idx,val) {
+  const v=parseFloat(val); if(!isNaN(v)&&v>=0){budget[idx].amount=v;renderBudget();}
+}
+function updateBudgetDue(idx,val) {
+  const v=parseInt(val); budget[idx].due=(!isNaN(v)&&v>=1&&v<=31)?v:null; renderBudget();
+}
+function updateLimit(idx,val) {
+  const v=parseFloat(val); if(!isNaN(v)&&v>=0){spendingLimits[idx].amount=v;renderBudget();}
 }
 
 function renderBudget() {
-  const txns = monthlyData[currentKey]||[];
-  const now = new Date();
+  const txns=monthlyData[currentKey]||[];
 
-  document.getElementById('bud-total').textContent = fmt(-budget.reduce((s,b)=>s+b.amount,0));
+  // --- BILLS ---
+  const getBillActual=(b)=>txns.filter(t=>{
+    if(t.amount>=0)return false;
+    if(t.category!==b.category)return false;
+    const multi=['Bills','Insurance','Subscriptions','Credit Card Debt'];
+    if(multi.includes(b.category)){
+      const nm=b.name.toLowerCase().split('/')[0].trim();
+      return t.desc.toLowerCase().includes(nm)||t.desc.toLowerCase().includes(b.name.toLowerCase().split(' ')[0]);
+    }
+    return true;
+  }).reduce((s,t)=>s+Math.abs(t.amount),0);
 
-  const getActual = (b) => {
-    return txns.filter(t => {
-      if (t.amount >= 0) return false;
-      if (t.category !== b.category) return false;
-      const multiCats = ['Bills','Insurance','Subscriptions'];
-      if (multiCats.includes(b.category)) {
-        const namePart = b.name.toLowerCase().split('/')[0].trim();
-        return t.desc.toLowerCase().includes(namePart) ||
-               t.desc.toLowerCase().includes(b.name.toLowerCase().split(' ')[0]);
-      }
-      return true;
-    }).reduce((s,t)=>s+Math.abs(t.amount),0);
-  };
-
-  const rows = budget.map((b,i) => {
-    const actual  = getActual(b);
-    const diff    = b.amount - actual;
-    const pct     = b.amount>0 ? Math.min(Math.round(actual/b.amount*100),100) : 0;
-    const over    = actual > b.amount;
-    const color   = over ? '#c0392b' : actual>0 ? '#27ae60' : '#888780';
-    const days    = daysUntilDue(b.due);
-    const urgent  = days !== null && days <= 3;
-    const dueLabel= b.due ? `Due ${dueSuffix(b.due)}${days!==null?(days===0?' · today':days===1?' · tomorrow':` · ${days}d`):''}` : 'No due date';
-    return {b, i, actual, diff, pct, over, color, days, urgent, dueLabel};
+  const billRows=budget.map((b,i)=>{
+    const actual=getBillActual(b);
+    const diff=b.amount-actual;
+    const pct=b.amount>0?Math.min(Math.round(actual/b.amount*100),100):0;
+    const over=actual>b.amount;
+    const color=over?'#c0392b':actual>0?'#27ae60':'#888780';
+    const days=daysUntilDue(b.due);
+    const urgent=days!==null&&days<=3;
+    const dueLabel=b.due?`Due ${dueSuffix(b.due)}${days!==null?(days===0?' · today':days===1?' · tomorrow':` · ${days}d`):''}`:'No due date';
+    return{b,i,actual,diff,pct,over,color,urgent,dueLabel};
+  }).sort((a,b2)=>{
+    if(a.urgent&&!b2.urgent)return-1;
+    if(!a.urgent&&b2.urgent)return 1;
+    return(a.b.due||99)-(b2.b.due||99);
   });
 
-  // Sort: overdue/urgent first, then by due day
-  const sorted = [...rows].sort((a,b) => {
-    if (a.urgent && !b.urgent) return -1;
-    if (!a.urgent && b.urgent) return 1;
-    return (a.b.due||99) - (b.b.due||99);
-  });
-
-  const totalActual = rows.reduce((s,r)=>s+r.actual,0);
-  const totalSaved  = rows.filter(r=>!r.over&&r.actual>0).reduce((s,r)=>s+r.diff,0);
-  const totalOver   = rows.filter(r=>r.over).reduce((s,r)=>s+Math.abs(r.diff),0);
-
-  document.getElementById('bud-actual').textContent = fmt(-totalActual);
-  document.getElementById('bud-saved').textContent  = fmt(totalSaved);
-  document.getElementById('bud-over').textContent   = fmt(-totalOver);
-
-  // Tracking view — sorted by urgency
-  document.getElementById('budget-list').innerHTML = sorted.map(({b,actual,diff,pct,over,color,urgent,dueLabel})=>`
+  document.getElementById('bills-list').innerHTML=billRows.map(({b,actual,diff,pct,over,color,urgent,dueLabel})=>`
     <div class="budget-row">
       <div class="budget-icon" style="background:${color}22;position:relative;">
-        ${b.icon}
-        ${urgent?'<span style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#c0392b;border:1.5px solid var(--surface);"></span>':''}
+        ${b.icon}${urgent?'<span style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#c0392b;border:1.5px solid var(--surface);"></span>':''}
       </div>
       <div class="budget-info">
         <div class="budget-name" style="display:flex;align-items:center;gap:6px;">
-          ${b.name}
-          <span style="font-size:11px;font-weight:500;color:${urgent?'#c0392b':'var(--text3)'};">${dueLabel}</span>
+          ${b.name}<span style="font-size:11px;font-weight:500;color:${urgent?'#c0392b':'var(--text3)'};">${dueLabel}</span>
         </div>
         <div class="budget-track-wrap">
           <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+          <div class="budget-amounts"><span>${actual>0?fmt(-actual):'Not paid yet'}</span><span>of ${fmt(-b.amount)}</span></div>
+        </div>
+      </div>
+      <div class="budget-right">
+        <div class="budget-status ${over?'over':actual>0?'ok':'none'}">${actual>0?(over?'▲ '+fmt(Math.abs(diff)):'▼ '+fmt(diff)):'—'}</div>
+      </div>
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No bills added yet.</div>';
+
+  // Bill edit list
+  document.getElementById('budget-edit-list').innerHTML=budget.map((b,i)=>`
+    <div class="budget-edit-row" style="${i>0?'border-top:0.5px solid var(--border);':''}">
+      <span class="budget-edit-icon">${b.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;">${b.name}</div>
+        <div style="font-size:11px;color:var(--text3);">${b.category} · Due ${b.due?dueSuffix(b.due):'not set'}</div>
+      </div>
+      <input class="budget-edit-input" type="number" value="${b.amount}" step="1" style="width:70px;" onchange="updateBudget(${i},this.value)">
+      <input type="number" min="1" max="31" value="${b.due||''}" style="width:40px;text-align:center;font-size:12px;border:0.5px solid var(--border);border-radius:6px;padding:4px;background:var(--surface2);color:var(--text3);font-family:inherit;margin-left:6px;" onchange="updateBudgetDue(${i},this.value)" placeholder="day">
+      <button onclick="deleteBudgetItem(${i})" style="border:none;background:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 0 0 8px;">🗑</button>
+    </div>`).join('') || '<div style="padding:16px;color:var(--text3);font-size:13px;">No bills yet.</div>';
+
+  // --- SPENDING LIMITS ---
+  const getLimitActual=(l)=>txns.filter(t=>t.amount<0&&t.category===l.category).reduce((s,t)=>s+Math.abs(t.amount),0);
+
+  const limitRows=spendingLimits.map((l,i)=>{
+    const actual=getLimitActual(l);
+    const diff=l.amount-actual;
+    const pct=l.amount>0?Math.min(Math.round(actual/l.amount*100),100):0;
+    const over=actual>l.amount;
+    const color=over?'#c0392b':pct>80?'#e67e22':'#27ae60';
+    return{l,i,actual,diff,pct,over,color};
+  });
+
+  document.getElementById('limits-list').innerHTML=limitRows.map(({l,actual,diff,pct,over,color})=>`
+    <div class="budget-row">
+      <div class="budget-icon" style="background:${color}22;">${l.icon}</div>
+      <div class="budget-info">
+        <div class="budget-name">${l.name}</div>
+        <div class="budget-track-wrap">
+          <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${color};"></div></div>
           <div class="budget-amounts">
-            <span>${actual>0?fmt(-actual):'Not paid yet'}</span>
-            <span>of ${fmt(-b.amount)}</span>
+            <span>${fmt(-actual)} spent</span>
+            <span>${fmt(-l.amount)} limit · ${100-pct}% left</span>
           </div>
         </div>
       </div>
       <div class="budget-right">
-        <div class="budget-status ${over?'over':actual>0?'ok':'none'}">
-          ${actual>0?(over?'▲ '+fmt(Math.abs(diff)):'▼ '+fmt(diff)):'—'}
-        </div>
+        <div class="budget-status ${over?'over':actual>0?'ok':'none'}">${actual>0?(over?'▲ '+fmt(Math.abs(diff)):'▼ '+fmt(diff)):'$0 spent'}</div>
       </div>
-    </div>`).join('');
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No spending limits added yet.</div>';
 
-  // Edit view — original order, with due date editable
-  document.getElementById('budget-edit-list').innerHTML = rows.map(({b,i,dueLabel})=>`
+  // Limits edit list
+  document.getElementById('limits-edit-list').innerHTML=spendingLimits.map((l,i)=>`
     <div class="budget-edit-row" style="${i>0?'border-top:0.5px solid var(--border);':''}">
-      <span class="budget-edit-icon">${b.icon}</span>
+      <span class="budget-edit-icon">${l.icon}</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:15px;">${b.name}</div>
-        <div style="font-size:11px;color:var(--text3);">${b.category} · Due ${b.due?dueSuffix(b.due):'not set'}</div>
+        <div style="font-size:14px;">${l.name}</div>
+        <div style="font-size:11px;color:var(--text3);">Tracks: ${l.category}</div>
       </div>
-      <input class="budget-edit-input" type="number" value="${b.amount}" step="1" style="width:70px;"
-        onchange="updateBudget(${i}, this.value)" placeholder="$">
-      <input type="number" min="1" max="31" value="${b.due||''}" style="width:44px;text-align:center;font-size:13px;border:0.5px solid var(--border);border-radius:6px;padding:4px;background:var(--surface2);color:var(--text3);font-family:inherit;margin-left:6px;"
-        onchange="updateBudgetDue(${i}, this.value)" placeholder="day">
-      <button onclick="deleteBudgetItem(${i})" style="border:none;background:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 0 0 8px;font-family:inherit;">🗑</button>
-    </div>`).join('');
+      <input class="budget-edit-input" type="number" value="${l.amount}" step="1" style="width:80px;" onchange="updateLimit(${i},this.value)" placeholder="$">
+      <button onclick="deleteLimit(${i})" style="border:none;background:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 0 0 8px;">🗑</button>
+    </div>`).join('') || '<div style="padding:16px;color:var(--text3);font-size:13px;">No limits yet.</div>';
+
+  // --- TOTALS ---
+  const totalBillsBudget=budget.reduce((s,b)=>s+b.amount,0);
+  const totalBillsActual=billRows.reduce((s,r)=>s+r.actual,0);
+  const totalLimitsBudget=spendingLimits.reduce((s,l)=>s+l.amount,0);
+  const totalLimitsActual=limitRows.reduce((s,r)=>s+r.actual,0);
+  const grandBudget=totalBillsBudget+totalLimitsBudget;
+  const grandActual=totalBillsActual+totalLimitsActual;
+  const grandSaved=Math.max(0,grandBudget-grandActual);
+  const grandOver=Math.max(0,grandActual-grandBudget);
+
+  document.getElementById('bud-total').textContent=fmt(-grandBudget);
+  document.getElementById('bud-actual').textContent=fmt(-grandActual);
+  document.getElementById('bud-saved').textContent=fmt(grandSaved);
+  document.getElementById('bud-over').textContent=fmt(-grandOver);
+  document.getElementById('bud-subtitle').textContent=`Bills: ${fmt(-totalBillsBudget)} · Limits: ${fmt(-totalLimitsBudget)}`;
+}
+
+// Debt tracker
+let debts = [
+  {name:'Chase Card',    icon:'💳', balance:0, originalBalance:0, apr:0,  minPayment:95},
+  {name:'Capital One',   icon:'💳', balance:0, originalBalance:0, apr:0,  minPayment:75},
+  {name:'Best Buy/Citi', icon:'💳', balance:0, originalBalance:0, apr:0,  minPayment:720},
+];
+
+function addDebt() {
+  const name    = document.getElementById('new-debt-name').value.trim();
+  const balance = parseFloat(document.getElementById('new-debt-balance').value);
+  const apr     = parseFloat(document.getElementById('new-debt-apr').value)||0;
+  const min     = parseFloat(document.getElementById('new-debt-min').value)||0;
+  if (!name || isNaN(balance) || balance <= 0) { alert('Please enter a name and balance.'); return; }
+  debts.push({name, icon:'💳', balance, originalBalance:balance, apr, minPayment:min});
+  document.getElementById('new-debt-name').value='';
+  document.getElementById('new-debt-balance').value='';
+  document.getElementById('new-debt-apr').value='';
+  document.getElementById('new-debt-min').value='';
+  renderDebt();
+}
+
+function deleteDebt(idx) {
+  if (!confirm(`Remove "${debts[idx].name}"?`)) return;
+  debts.splice(idx,1);
+  renderDebt();
+}
+
+function updateDebtField(idx, field, val) {
+  const v = parseFloat(val);
+  if (!isNaN(v) && v >= 0) debts[idx][field] = v;
+  renderDebt();
+}
+
+function renderDebt() {
+  const totalDebt     = debts.reduce((s,d)=>s+d.balance,0);
+  const totalOriginal = debts.reduce((s,d)=>s+(d.originalBalance||d.balance),0);
+  const totalPaid     = Math.max(0, totalOriginal - totalDebt);
+  const pct           = totalOriginal > 0 ? Math.round(totalPaid/totalOriginal*100) : 0;
+
+  document.getElementById('debt-total-val').textContent = fmt(-totalDebt);
+
+  if (totalDebt > 0) {
+    const totalMin = debts.reduce((s,d)=>s+d.minPayment,0);
+    document.getElementById('debt-total-sub').textContent =
+      `Min. payments: ${fmt(-totalMin)}/mo · ${debts.length} account${debts.length!==1?'s':''}`;
+  } else {
+    document.getElementById('debt-total-sub').textContent = debts.length === 0 ? 'No debts added yet' : 'All paid off! 🎉';
+  }
+
+  const progWrap = document.getElementById('debt-progress-wrap');
+  if (totalOriginal > 0 && totalPaid > 0) {
+    progWrap.style.display = 'block';
+    document.getElementById('debt-prog-fill').style.width = pct+'%';
+    document.getElementById('debt-prog-paid').textContent = fmt(totalPaid)+' paid off';
+    document.getElementById('debt-prog-pct').textContent = pct+'%';
+  } else { progWrap.style.display = 'none'; }
+
+  // Sort by APR descending (avalanche method — pay highest interest first)
+  const sorted = [...debts].map((d,i)=>({d,i})).sort((a,b)=>b.d.apr-a.d.apr);
+
+  document.getElementById('debt-list').innerHTML = sorted.length === 0
+    ? '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px;">No debts added yet. Use the form below to add your credit cards and loans.</div>'
+    : sorted.map(({d,i},rank)=>{
+        const orig  = d.originalBalance||d.balance;
+        const paid  = Math.max(0, orig - d.balance);
+        const pct   = orig > 0 ? Math.min(Math.round(paid/orig*100),100) : 0;
+        const monthsLeft = d.minPayment > 0 && d.balance > 0
+          ? Math.ceil(d.balance / d.minPayment) : null;
+        const isTop = rank === 0 && sorted.length > 1 && d.apr > 0;
+        return `<div class="debt-row">
+          <div class="debt-icon" style="background:#c0392b22;">${d.icon}</div>
+          <div class="debt-info">
+            <div class="debt-name">
+              ${d.name}
+              ${isTop?'<span class="avalanche-badge">Pay first</span>':''}
+            </div>
+            <div class="debt-meta">
+              ${d.apr>0?d.apr+'% APR · ':''}${d.minPayment>0?'Min '+fmt(-d.minPayment)+'/mo':'No min set'}
+              ${monthsLeft?` · ~${monthsLeft}mo left`:''}
+            </div>
+            ${orig>0?`<div class="debt-bar-bg"><div class="debt-bar-fill" style="width:${pct}%;background:var(--green);"></div></div>`:''}
+          </div>
+          <div class="debt-right">
+            <div class="debt-balance">${fmt(-d.balance)}</div>
+            ${d.minPayment>0?`<div class="debt-min">min ${fmt(-d.minPayment)}</div>`:''}
+          </div>
+        </div>`;
+      }).join('');
+
+  // Edit list
+  document.getElementById('debt-edit-list').innerHTML = debts.length === 0
+    ? '<div style="padding:16px;color:var(--text3);font-size:13px;">No debts yet.</div>'
+    : debts.map((d,i)=>`
+      <div class="debt-edit-row" style="${i>0?'border-top:0.5px solid var(--border);':''}">
+        <span style="font-size:17px;margin-right:10px;">💳</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:500;">${d.name}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+            <input class="debt-input-sm" type="number" value="${d.balance}" placeholder="Balance" title="Balance"
+              onchange="updateDebtField(${i},'balance',this.value)" style="width:90px;">
+            <input class="debt-input-sm" type="number" value="${d.apr||''}" placeholder="APR%" title="APR %"
+              onchange="updateDebtField(${i},'apr',this.value)" style="width:64px;">
+            <input class="debt-input-sm" type="number" value="${d.minPayment||''}" placeholder="Min $" title="Min payment"
+              onchange="updateDebtField(${i},'minPayment',this.value)" style="width:72px;">
+          </div>
+        </div>
+        <button onclick="deleteDebt(${i})" style="border:none;background:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 0 0 8px;">🗑</button>
+      </div>`).join('');
+
+  // Payoff tip
+  const topDebt = sorted[0]?.d;
+  let tip = '<strong>Avalanche method:</strong> Pay minimums on everything, then throw any extra money at the highest interest rate debt first. This saves the most money overall.<br><br>';
+  if (topDebt && topDebt.apr > 0) {
+    tip += `• Focus extra payments on <strong>${topDebt.name}</strong> (${topDebt.apr}% APR) first.<br>`;
+  }
+  if (totalDebt > 0) {
+    const totalMin = debts.reduce((s,d)=>s+d.minPayment,0);
+    tip += `• Your minimum payments total ${fmt(-totalMin)}/mo. Any extra above that goes to the top card.<br>`;
+    tip += `• Even an extra $50/mo makes a significant difference on high-APR debt.`;
+  }
+  document.getElementById('debt-tip').innerHTML = tip;
 }
 
 // Init
 buildAllScrolls();
 renderTab('home');
+renderDebt();
 </script>
 </body>
 </html>
