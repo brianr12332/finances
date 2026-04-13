@@ -350,6 +350,34 @@
           5. Come back here and upload it
         </div>
       </div>
+
+      <!-- BACKUP SECTION -->
+      <div style="padding:0 16px;">
+        <div class="section-header">Backup your data</div>
+        <div style="background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;">
+          <div style="padding:16px;">
+            <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Export everything</div>
+            <div style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:14px;">Downloads all your transactions from every month as a single CSV. Save this file somewhere safe — you can re-upload it anytime to restore your data.</div>
+            <button class="submit-btn" style="margin:0;" onclick="exportAll()">📥 Export all data</button>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;">
+          <div style="padding:16px;">
+            <div style="font-size:15px;font-weight:600;margin-bottom:6px;">This month only</div>
+            <div style="font-size:13px;color:var(--text3);margin-bottom:14px;" id="export-month-label">Exports current month's transactions.</div>
+            <button onclick="exportMonth()" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:15px;font-weight:500;cursor:pointer;">📄 Export this month</button>
+          </div>
+        </div>
+
+        <div style="background:var(--red-bg);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;">
+          <div style="padding:16px;">
+            <div style="font-size:15px;font-weight:600;color:var(--red);margin-bottom:6px;">⚠️ Clear all saved data</div>
+            <div style="font-size:13px;color:var(--red);opacity:0.8;margin-bottom:14px;">This permanently deletes everything. Export first.</div>
+            <button onclick="clearAllData()" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;">🗑 Clear all data</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- MANUAL ADD -->
@@ -745,6 +773,7 @@ function buildMonthScroll(containerId) {
 function selectMonth(key) {
   currentKey=key;
   activeFilter='All';
+  save();
   buildAllScrolls();
   renderTab(activeTab);
 }
@@ -769,7 +798,10 @@ function goTab(name) {
   else if(name==='insights') renderTab('insights');
   else if(name==='budget') renderBudget();
   else if(name==='debt') renderDebt();
-}
+  else if(name==='upload') {
+    const lbl = document.getElementById('export-month-label');
+    if (lbl) lbl.textContent = `Exports ${monthLabel(currentKey)}'s transactions.`;
+  }
 
 function renderTab(name) {
   const txns=monthlyData[currentKey]||[];
@@ -880,6 +912,7 @@ function toggleEss(idx) {
   const txns=monthlyData[currentKey]||[];
   renderTxns(txns,txns.length>0,monthLabel(currentKey));
   updateShop(txns);
+  save();
 }
 
 function renderInsights(txns,has,label) {
@@ -960,6 +993,7 @@ function handleFile(input) {
     if(!monthlyData[key])monthlyData[key]=[];
     monthlyData[key]=[...monthlyData[key],...txns];
     currentKey=key;activeFilter='All';
+    save();
     buildAllScrolls();
     goTab('home');
     alert(`Added ${txns.length} transactions to ${monthLabel(key)}.`);
@@ -984,6 +1018,7 @@ function addManual() {
   document.getElementById('m-desc').value='';
   document.getElementById('m-amount').value='';
   currentKey=key;activeFilter='All';
+  save();
   buildAllScrolls();
   goTab('home');
 }
@@ -1074,6 +1109,7 @@ function addBudgetItem() {
   document.getElementById('new-bill-name').value='';
   document.getElementById('new-bill-amount').value='';
   document.getElementById('new-bill-due').value='';
+  save();
   renderBudget();
 }
 
@@ -1085,27 +1121,28 @@ function addSpendingLimit() {
   spendingLimits.push({name,icon:CAT_ICONS[category]||'📦',category,amount});
   document.getElementById('new-limit-name').value='';
   document.getElementById('new-limit-amount').value='';
+  save();
   renderBudget();
 }
 
 function deleteBudgetItem(idx) {
   if(!confirm(`Remove "${budget[idx].name}"?`))return;
-  budget.splice(idx,1); renderBudget();
+  budget.splice(idx,1); save(); renderBudget();
 }
 
 function deleteLimit(idx) {
   if(!confirm(`Remove "${spendingLimits[idx].name}"?`))return;
-  spendingLimits.splice(idx,1); renderBudget();
+  spendingLimits.splice(idx,1); save(); renderBudget();
 }
 
 function updateBudget(idx,val) {
-  const v=parseFloat(val); if(!isNaN(v)&&v>=0){budget[idx].amount=v;renderBudget();}
+  const v=parseFloat(val); if(!isNaN(v)&&v>=0){budget[idx].amount=v; save(); renderBudget();}
 }
 function updateBudgetDue(idx,val) {
-  const v=parseInt(val); budget[idx].due=(!isNaN(v)&&v>=1&&v<=31)?v:null; renderBudget();
+  const v=parseInt(val); budget[idx].due=(!isNaN(v)&&v>=1&&v<=31)?v:null; save(); renderBudget();
 }
 function updateLimit(idx,val) {
-  const v=parseFloat(val); if(!isNaN(v)&&v>=0){spendingLimits[idx].amount=v;renderBudget();}
+  const v=parseFloat(val); if(!isNaN(v)&&v>=0){spendingLimits[idx].amount=v; save(); renderBudget();}
 }
 
 function renderBudget() {
@@ -1248,18 +1285,21 @@ function addDebt() {
   document.getElementById('new-debt-balance').value='';
   document.getElementById('new-debt-apr').value='';
   document.getElementById('new-debt-min').value='';
+  save();
   renderDebt();
 }
 
 function deleteDebt(idx) {
   if (!confirm(`Remove "${debts[idx].name}"?`)) return;
   debts.splice(idx,1);
+  save();
   renderDebt();
 }
 
 function updateDebtField(idx, field, val) {
   const v = parseFloat(val);
   if (!isNaN(v) && v >= 0) debts[idx][field] = v;
+  save();
   renderDebt();
 }
 
@@ -1353,7 +1393,85 @@ function renderDebt() {
   document.getElementById('debt-tip').innerHTML = tip;
 }
 
-// Init
+// ── PERSISTENCE ──────────────────────────────────────────────
+const STORAGE_KEY = 'brianFinanceApp_v1';
+
+let storageAvailable = false;
+try {
+  localStorage.setItem('__test__', '1');
+  localStorage.removeItem('__test__');
+  storageAvailable = true;
+} catch(e) { storageAvailable = false; }
+
+function save() {
+  if (!storageAvailable) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      monthlyData, budget, spendingLimits, debts, currentKey
+    }));
+  } catch(e) { console.warn('Save failed', e); }
+}
+
+function load() {
+  if (!storageAvailable) return false;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (d.monthlyData && typeof d.monthlyData === 'object')    monthlyData    = d.monthlyData;
+    if (d.budget && Array.isArray(d.budget))                   budget         = d.budget;
+    if (d.spendingLimits && Array.isArray(d.spendingLimits))   spendingLimits = d.spendingLimits;
+    if (d.debts && Array.isArray(d.debts))                     debts          = d.debts;
+    if (d.currentKey && typeof d.currentKey === 'string')      currentKey     = d.currentKey;
+    return true;
+  } catch(e) { console.warn('Load failed', e); return false; }
+}
+// ─────────────────────────────────────────────────────────────
+
+function exportAll() {
+  const allKeys = Object.keys(monthlyData).sort();
+  if (!allKeys.length) { alert('No data to export.'); return; }
+  const rows = [['Month','Date','Description','Category','Shopping Type','Amount']];
+  allKeys.forEach(key => {
+    (monthlyData[key]||[]).forEach(t => {
+      rows.push([
+        monthLabel(key),
+        t.date,
+        `"${t.desc}"`,
+        t.category,
+        t.category==='Shopping' ? (t.essential!==false?'Essential':'Non-essential') : '',
+        t.amount
+      ]);
+    });
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `finance-all-data-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function exportMonth() {
+  const txns = monthlyData[currentKey]||[];
+  if (!txns.length) { alert('No data for this month.'); return; }
+  const rows = [['Date','Description','Category','Shopping Type','Amount'],
+    ...txns.map(t=>[t.date,`"${t.desc}"`,t.category,
+      t.category==='Shopping'?(t.essential!==false?'Essential':'Non-essential'):'',t.amount])];
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download = `finance-${currentKey}.csv`;
+  a.click();
+}
+
+function clearAllData() {
+  if (!confirm('This will delete ALL your data permanently. Make sure you exported first. Are you sure?')) return;
+  if (!confirm('Last chance — this cannot be undone. Delete everything?')) return;
+  if (storageAvailable) localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// Init — load saved data, then render
+load();
 buildAllScrolls();
 renderTab('home');
 renderDebt();
